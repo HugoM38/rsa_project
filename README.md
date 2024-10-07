@@ -14,7 +14,7 @@ Assurez-vous d'avoir les éléments suivants installés sur votre machine :
 Clonez le dépôt et installez les dépendances :
 
 ```bash
-git clone https://github.com/votre-utilisateur/rsa_project.git
+git clone https://github.com/HugoM38/rsa_project.git
 cd rsa_project
 python3 -m venv venv
 source venv/bin/activate
