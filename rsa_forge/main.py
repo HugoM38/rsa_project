@@ -23,37 +23,26 @@ def keygen(num_digits, public_key_file, private_key_file):
     print(f"Clé privée sauvegardée dans {private_key_file}")
     
 def crypt(text, public_key_file):
-    """
-    Chiffre le texte donné avec la clé publique spécifiée.
-
-    Args:
-        text (str): Le texte à chiffrer.
-        public_key_file (str): Le fichier de la clé publique.
-    """
-    # Read public key
     with open(public_key_file, 'r') as f:
         lines = f.readlines()
         if not lines[0].startswith('---begin monRSA public key---'):
             raise Exception("Le fichier de clé publique n'est pas valide.")
         
-        # Extract base64 content
+        # Extract n and e
         b64_content = ''.join(lines[1:-1]).strip()
-        # Decode base64
         decoded_bytes = base64.b64decode(b64_content)
         decoded_str = decoded_bytes.decode('utf-8')
-        # Split n and e
         n_hex, e_hex = decoded_str.split('\n')
-        # Convert from hexadecimal to decimal
         n = int(n_hex, 16)
         e = int(e_hex, 16)
 
-    # Transform text into ASCII codes on 3 digits
+    # Convert the text to a sequence of ASCII codes
     ascii_codes = ''.join([format(ord(c), '03d') for c in text])
 
-    # Determine block size
+    # Determine block size based on n
     block_size = len(str(n)) - 1
 
-    # Split ASCII codes into blocks of size block_size
+    # Split the ASCII codes into blocks of size block_size
     blocks = []
     i = len(ascii_codes)
     while i > 0:
@@ -71,24 +60,56 @@ def crypt(text, public_key_file):
         C = pow(B, e, n)
         encrypted_blocks.append(str(C))
 
-    # Assemblate encrypted blocks into a sequence
-    encrypted_sequence = ''.join(encrypted_blocks)
+    # Join the encrypted blocks into a sequence
+    encrypted_sequence = ','.join(encrypted_blocks)
 
-    # Encode encrypted sequence in ASCII then Base64
-    ascii_chars = []
-    i = 0
-    while i < len(encrypted_sequence):
-        chunk = encrypted_sequence[i:i+3]
-        if len(chunk) < 3:
-            chunk = chunk.ljust(3, '0')
-        ascii_code = int(chunk) % 256
-        ascii_chars.append(chr(ascii_code))
-        i += 3
-
-    ascii_str = ''.join(ascii_chars)
-    b64_encoded = base64.b64encode(ascii_str.encode('latin1')).decode('ascii')
+    # Encode the sequence in Base64
+    encrypted_bytes = encrypted_sequence.encode('utf-8')
+    b64_encoded = base64.b64encode(encrypted_bytes).decode('ascii')
     print(b64_encoded)
 
+def decrypt(encrypted_text, private_key_file):
+    with open(private_key_file, 'r') as f:
+        lines = f.readlines()
+        if not lines[0].startswith('---begin monRSA private key---'):
+            raise Exception("Le fichier de clé privée n'est pas valide.")
+        
+        # Extract n and d
+        b64_content = ''.join(lines[1:-1]).strip()
+        decoded_bytes = base64.b64decode(b64_content)
+        decoded_str = decoded_bytes.decode('utf-8')
+        n_hex, d_hex = decoded_str.split('\n')
+        n = int(n_hex, 16)
+        d = int(d_hex, 16)
+
+    # Decode the Base64 sequence
+    encrypted_bytes = base64.b64decode(encrypted_text)
+    encrypted_sequence = encrypted_bytes.decode('utf-8')
+
+    # Split the sequence into encrypted blocks
+    encrypted_blocks_str = encrypted_sequence.split(',')
+
+    # Decrypt each block
+    decrypted_blocks = []
+    block_size = len(str(n)) - 1
+    for block_str in encrypted_blocks_str:
+        C = int(block_str)
+        B = pow(C, d, n)
+        decrypted_blocks.append(str(B).zfill(block_size))
+
+    # Join the decrypted blocks into a sequence
+    decrypted_sequence = ''.join(decrypted_blocks)
+
+    # Convert the sequence of ASCII codes to text
+    decrypted_text = ''
+    i = 0
+    while i < len(decrypted_sequence):
+        ascii_code_str = decrypted_sequence[i:i+3]
+        ascii_code = int(ascii_code_str)
+        decrypted_text += chr(ascii_code)
+        i += 3
+
+    print(decrypted_text)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -132,12 +153,28 @@ def main():
         help='Texte à chiffrer'
     )
     
+    # Subparser for decrypt command
+    parser_decrypt = subparsers.add_parser('decrypt', help='Déchiffrer un texte avec une clé privée RSA')
+    parser_decrypt.add_argument(
+        '--private', 
+        type=str, 
+        required=True, 
+        help='Fichier de la clé privée'
+    )
+    parser_decrypt.add_argument(
+        'text', 
+        type=str, 
+        help='Texte à déchiffrer'
+    )
+    
     args = parser.parse_args()
     
     if args.command == 'keygen':
         keygen(args.digits, args.public, args.private)
     elif args.command == 'crypt':
         crypt(args.text, args.public)
+    elif args.command == 'decrypt':
+        decrypt(args.text, args.private)
     else:
         parser.print_help()
 
