@@ -1,17 +1,24 @@
-# rsa_forge/main.py
-
 import argparse
 from rsa_forge.key_generation import generate_keypair
 from rsa_forge.utils import save_key
 
 def keygen(num_digits, public_key_file, private_key_file):
+    """
+    Génère une paire de clés RSA et les sauvegarde dans les fichiers spécifiés.
+
+    Args:
+        num_digits (int): Le nombre de chiffres pour p et q.
+        public_key_file (str): Le fichier de sauvegarde de la clé publique.
+        private_key_file (str): Le fichier de sauvegarde de la clé privée.
+    """
     public_key, private_key = generate_keypair(num_digits)
     
-    # Sauvegarder les clés
-    save_key(public_key, public_key_file)
+    # Save public key
+    save_key(public_key, public_key_file, key_type='public')
     print(f"Clé publique sauvegardée dans {public_key_file}")
     
-    save_key(private_key, private_key_file)
+    # Save private key
+    save_key(private_key, private_key_file, key_type='private')
     print(f"Clé privée sauvegardée dans {private_key_file}")
 
 def main():
@@ -21,7 +28,7 @@ def main():
     
     subparsers = parser.add_subparsers(dest='command', help='Sous-commandes disponibles')
     
-    # Sous-commande keygen
+    # Subparser for keygen command
     parser_keygen = subparsers.add_parser('keygen', help='Générer une paire de clés RSA')
     parser_keygen.add_argument(
         '--digits', 
