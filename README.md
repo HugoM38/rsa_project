@@ -26,7 +26,7 @@ pip install sympy
 
 ### Génération des clés
 
-Pour générer une paire de clés RSA :
+Pour générer une paire de clés RSA (Voir les paramètre optionnels avec la commande RSAForge keygen -h) :
 
 ```bash
 RSAForge keygen  
@@ -37,7 +37,7 @@ RSAForge keygen
 Pour chiffrer un message :
 
 ```bash
-TODO
+RSAForge crypt --public public_key.pub test
 ```
 
 ### Déchiffrement

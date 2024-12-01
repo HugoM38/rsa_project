@@ -1,5 +1,3 @@
-# rsa_forge/utils.py
-
 import base64
 
 def save_key(key, filename, key_type='public'):
